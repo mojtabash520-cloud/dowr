@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'presentation/pages/setup_page.dart';
 import 'core/utils/sound_manager.dart';
 import 'data/data_loader.dart';
-import 'core/utils/ad_manager.dart';
+import 'core/utils/ad_manager.dart'; 
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,8 +35,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
       SoundManager().pauseMusic();
     } else if (state == AppLifecycleState.resumed) {
       SoundManager().resumeMusic();
@@ -58,9 +57,8 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        fontFamily: 'Peyda', // فونت پیش‌فرض
-
-        // ✅ اجبار فونت روی تمام استایل‌های متنی (برای حل مشکل فونت‌های سیستمی)
+        fontFamily: 'Peyda', 
+        
         textTheme: const TextTheme(
           displayLarge: TextStyle(fontFamily: 'Peyda'),
           displayMedium: TextStyle(fontFamily: 'Peyda'),
@@ -79,24 +77,20 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           labelSmall: TextStyle(fontFamily: 'Peyda'),
         ),
 
-        // ✅ اجبار فونت روی دکمه‌ها
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            textStyle: const TextStyle(
-                fontFamily: 'Peyda', fontWeight: FontWeight.bold),
+            textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            textStyle: const TextStyle(
-                fontFamily: 'Peyda', fontWeight: FontWeight.bold),
+            textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
           ),
         ),
 
-        // ✅ اجبار فونت روی دیالوگ‌ها
-        dialogTheme: const DialogTheme(
-          titleTextStyle: TextStyle(
-              fontFamily: 'Hasti', fontSize: 22, fontWeight: FontWeight.bold),
+        // ✅ خطای بیلد گیت‌هاب در این خط برطرف شد
+        dialogTheme: const DialogThemeData(
+          titleTextStyle: TextStyle(fontFamily: 'Hasti', fontSize: 22, fontWeight: FontWeight.bold),
           contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16),
         ),
 
