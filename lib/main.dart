@@ -79,7 +79,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           labelSmall: TextStyle(fontFamily: 'Peyda'),
         ),
 
-        // ✅ ۳. اجبار فونت برای دکمه‌ها (Elevated, Text, Outlined)
+        // ✅ ۳. اجبار فونت برای دکمه‌ها
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
@@ -96,13 +96,13 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           ),
         ),
 
-        // ✅ ۴. اجبار فونت برای پنجره‌های بازشو (Dialogs)
-        dialogTheme: const DialogTheme(
+        // ✅ ۴. حل ارور گیت‌هاب: استفاده از DialogThemeData به جای DialogTheme
+        dialogTheme: const DialogThemeData(
           titleTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 22, fontWeight: FontWeight.bold),
           contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16),
         ),
         
-        // ✅ ۵. اجبار فونت برای اسنک‌بار (پیام‌های پایین صفحه)
+        // ✅ ۵. اجبار فونت برای اسنک‌بار
         snackBarTheme: const SnackBarThemeData(
           contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 14),
         ),
