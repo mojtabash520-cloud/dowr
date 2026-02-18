@@ -1,0 +1,38 @@
+name: Build Flutter APK
+
+on:
+  workflow_dispatch: # ✅ فقط با زدن دکمه دستی اجرا می‌شود
+  # push:  <-- این بخش‌ها حذف شدند تا خودکار اجرا نشود
+  #   branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      - name: 🛠️ Build APK
+        run: flutter build apk --release
+
+      - name: 📤 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DOWR-Game-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
