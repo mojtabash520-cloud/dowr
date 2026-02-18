@@ -45,7 +45,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DOWR', // نام داخلی برنامه
+      title: 'DOWR',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -57,8 +57,10 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
+        // ✅ ۱. تعریف فونت پایه برای کل برنامه
         fontFamily: 'Peyda', 
         
+        // ✅ ۲. اجبار فونت برای تمام نوشته‌های ریز و درشت
         textTheme: const TextTheme(
           displayLarge: TextStyle(fontFamily: 'Peyda'),
           displayMedium: TextStyle(fontFamily: 'Peyda'),
@@ -77,6 +79,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           labelSmall: TextStyle(fontFamily: 'Peyda'),
         ),
 
+        // ✅ ۳. اجبار فونت برای دکمه‌ها (Elevated, Text, Outlined)
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
@@ -87,11 +90,21 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
             textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
           ),
         ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold),
+          ),
+        ),
 
-        // ✅ خطای بیلد گیت‌هاب در این خط برطرف شد
-        dialogTheme: const DialogThemeData(
-          titleTextStyle: TextStyle(fontFamily: 'Hasti', fontSize: 22, fontWeight: FontWeight.bold),
+        // ✅ ۴. اجبار فونت برای پنجره‌های بازشو (Dialogs)
+        dialogTheme: const DialogTheme(
+          titleTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 22, fontWeight: FontWeight.bold),
           contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16),
+        ),
+        
+        // ✅ ۵. اجبار فونت برای اسنک‌بار (پیام‌های پایین صفحه)
+        snackBarTheme: const SnackBarThemeData(
+          contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 14),
         ),
 
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
