@@ -1,0 +1,5 @@
+// Define your colors here
+import 'package:flutter/material.dart';
+class AppColors {
+  static const primary = Colors.indigo;
+}
