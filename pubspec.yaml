@@ -18,7 +18,7 @@ dependencies:
   shared_preferences: ^2.2.2
   http: ^1.2.0
   connectivity_plus: ^5.0.2
-  tapsell_plus: ^2.2.0  # ✅ پکیج تپسل
+  tapsell_plus: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -36,16 +36,15 @@ flutter:
     - assets/icon/
     - assets/images/
 
-  # ✅ فقط فونت‌های موجود (پیدا و هستی)
- fonts:
-    - family: Peyda  # 👈 این همان اسمی است که در main.dart و دکمه‌ها استفاده کردیم
+  # فقط فونت‌های موجود (پیدا و هستی)
+  fonts:
+    - family: Peyda
       fonts:
-        - asset: assets/fonts/PeydaFaNum-Regular.ttf # 👈 این اسم دقیق فایل شماست
+        - asset: assets/fonts/PeydaFaNum-Regular.ttf
           weight: 400
     
     - family: Hasti
       fonts:
-
         - asset: assets/fonts/Hasti-HeavyR.ttf
 
 flutter_launcher_icons:
@@ -53,5 +52,3 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
-
-
