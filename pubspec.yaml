@@ -37,10 +37,11 @@ flutter:
     - assets/images/
 
   # ✅ فقط فونت‌های موجود (پیدا و هستی)
-  fonts:
-    - family: Peyda
+ fonts:
+    - family: Peyda  # 👈 این همان اسمی است که در main.dart و دکمه‌ها استفاده کردیم
       fonts:
-        - asset: assets/fonts/PeydaFaNum-Regular.ttf
+        - asset: assets/fonts/PeydaFaNum-Regular.ttf # 👈 این اسم دقیق فایل شماست
+          weight: 400
     
     - family: Hasti
       fonts:
@@ -52,4 +53,5 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
+
 
