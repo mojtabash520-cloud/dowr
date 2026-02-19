@@ -22,6 +22,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // ✅ سیستم‌های قبلی کاملا حفظ شده‌اند
     SoundManager().startMusic();
     DataLoader.checkForUpdate();
     AdManager.initialize();
@@ -44,14 +45,6 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    // ۱. ساخت یک تم پایه
-    final baseTheme = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      fontFamily: 'Peyda',
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
-    );
-
     return MaterialApp(
       title: 'DOWR',
       debugShowCheckedModeBanner: false,
@@ -62,42 +55,45 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
       ],
       supportedLocales: const [Locale('fa', 'IR')],
       locale: const Locale('fa', 'IR'),
-      
-      // 🔴 روش قطعی اول: تزریق مستقیم و بی‌رحمانه فونت روی تمام لایه‌های تم با متد apply
-      theme: baseTheme.copyWith(
-        textTheme: baseTheme.textTheme.apply(fontFamily: 'Peyda'),
-        primaryTextTheme: baseTheme.primaryTextTheme.apply(fontFamily: 'Peyda'),
-        
-        // اجبار فونت برای پنجره‌های پاپ‌آپ و دیالوگ‌ها
-        dialogTheme: const DialogThemeData(
-          titleTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 22, fontWeight: FontWeight.bold),
-          contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16),
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        fontFamily: 'Peyda',
+
+        // 🔴 نهایت قدرت فلاتر برای القای فونت به تمام بخش‌ها (مخصوصا صفحه راهنما)
+        typography: Typography.material2021(
+          black: Typography.blackCupertino.apply(fontFamily: 'Peyda'),
+          white: Typography.whiteCupertino.apply(fontFamily: 'Peyda'),
+          englishLike: Typography.englishLike2021.apply(fontFamily: 'Peyda'),
+          dense: Typography.dense2021.apply(fontFamily: 'Peyda'),
+          tall: Typography.tall2021.apply(fontFamily: 'Peyda'),
         ),
-        
-        // اجبار فونت برای تمام مدل‌های دکمه
+
+        // ✅ تنظیمات دیالوگ‌ها که رنگ مشکی و فونت را قبلاً فیکس کردیم
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(fontFamily: 'Hasti', fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+          contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16, color: Colors.black87),
+        ),
+
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold)),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold)),
         ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold)),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 14),
-        ),
+        
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
       ),
-
-      // 🔴 روش قطعی دوم (Nuclear Option): پیچیدن کل اپلیکیشن در یک استایل پیش‌فرض
-      // اگر ویجتی از تم فرار کند، در این تله گیر می‌افتد!
+      
+      // 🔴 یک لایه امنیتی دیگر: اگر ویجتی از تم فرار کرد، اینجا گیر می‌افتد
       builder: (context, child) {
         return DefaultTextStyle(
-          style: const TextStyle(fontFamily: 'Peyda'),
+          style: const TextStyle(fontFamily: 'Peyda', color: Colors.black87),
           child: child!,
         );
       },
-      
       home: const SetupPage(),
     );
   }
