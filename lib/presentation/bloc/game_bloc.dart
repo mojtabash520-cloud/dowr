@@ -62,9 +62,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onStartGame(StartGame event, Emitter<GameState> emit) {
     _roundWordsPool = List.from(_allWords);
-    _startTicker();
     _nextWord(emit);
     emit(state.copyWith(status: GameStatus.playing));
+    
+    // ✅ اصلاح مهم: تایمر ۳ ثانیه صبر می‌کند تا شمارش معکوسِ رابط کاربری تمام شود
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!isClosed) _startTicker();
+    });
   }
 
   void _onTickTimer(TickTimer event, Emitter<GameState> emit) {
@@ -81,6 +85,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         List<Team> newRanking = List.from(state.ranking)
           ..add(updatedTeams[state.currentTeamIndex]);
         _timerSubscription?.pause();
+        
+        // ✅ کلمه بلافاصله برای تیم بعدی عوض می‌شود تا کلمه سوخته تکرار نشود
+        _nextWord(emit); 
+        
         emit(state.copyWith(
             teams: updatedTeams,
             status: GameStatus.teamEliminated,
@@ -95,6 +103,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       int newTime = state.roundRemainingTime - 1;
       if (newTime <= 0) {
         _timerSubscription?.pause();
+        
+        // ✅ تعویض کلمه در حالت امتیازی به محض پایان نوبت
+        _nextWord(emit); 
+        
         emit(state.copyWith(
             status: GameStatus.turnFinished, roundRemainingTime: 0));
       } else {
@@ -143,7 +155,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             currentTeamIndex: nextTeamIndex,
             currentRound: nextRound,
             roundRemainingTime: settings.turnDuration));
-        _nextWord(emit);
+        // حذف شد: کلمه قبلاً در زمان پایان تایمر عوض شده است
         _timerSubscription?.resume();
       }
     }
