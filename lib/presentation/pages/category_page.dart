@@ -5,6 +5,7 @@ import '../../domain/entities/word.dart';
 import '../../data/data_loader.dart';
 import '../../core/utils/monetization_manager.dart';
 import '../../core/utils/ad_manager.dart';
+import '../../core/utils/sound_manager.dart'; // ✅ اضافه شده برای ری‌استارت موزیک
 import 'game_page.dart';
 import '../widgets/animated_widgets.dart';
 
@@ -57,16 +58,18 @@ class _CategoryPageState extends State<CategoryPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text("قفل ${category.name}",
             textAlign: TextAlign.center,
-            style: const TextStyle(fontFamily: 'Hasti')),
+            style: const TextStyle(fontFamily: 'Hasti', color: Colors.black)),
         content: const Text(
           "این دسته قفل است.\n\n"
           "۱. خرید نسخه کامل (۴۹ هزار تومان) و باز شدن همیشگی همه دسته‌ها\n\n"
           "۲. دیدن ۲ تبلیغ کوتاه برای باز شدن ۳ ساعته این دسته",
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Peyda'),
+          style: TextStyle(fontFamily: 'Peyda', color: Colors.black87),
         ),
         actions: [
           SizedBox(
@@ -105,22 +108,22 @@ class _CategoryPageState extends State<CategoryPage> {
     await MonetizationManager.setPremiumUser();
     setState(() {});
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("نسخه کامل فعال شد! 🎉")));
+        .showSnackBar(const SnackBar(content: Text("نسخه کامل فعال شد! 🎉", style: TextStyle(fontFamily: 'Peyda'))));
   }
 
   void _showAdScenario(String categoryId) async {
     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("در حال آماده‌سازی تبلیغ اول...")));
+        const SnackBar(content: Text("در حال آماده‌سازی تبلیغ اول...", style: TextStyle(fontFamily: 'Peyda'))));
     bool watchedFirst = await AdManager.showRewardedVideo();
 
     if (!watchedFirst) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("خطا در بارگذاری تبلیغ!")));
+          const SnackBar(content: Text("خطا در بارگذاری تبلیغ!", style: TextStyle(fontFamily: 'Peyda'))));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("در حال آماده‌سازی تبلیغ دوم...")));
+        const SnackBar(content: Text("در حال آماده‌سازی تبلیغ دوم...", style: TextStyle(fontFamily: 'Peyda'))));
     await Future.delayed(const Duration(seconds: 1));
     bool watchedSecond = await AdManager.showRewardedVideo();
 
@@ -130,16 +133,21 @@ class _CategoryPageState extends State<CategoryPage> {
         _selectedCategoryIds.add(categoryId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("دسته برای ۳ ساعت باز شد! 🔓")));
+          const SnackBar(content: Text("دسته برای ۳ ساعت باز شد! 🔓", style: TextStyle(fontFamily: 'Peyda'))));
     }
   }
 
   void _startGame() {
     if (_selectedCategoryIds.isEmpty) return;
+    
+    // ✅ با فشردن دکمه شروع بازی، موزیک از ثانیه صفر پرانرژی شروع می‌شود
+    SoundManager().startMusic(forceRestart: true);
+
     List<String> combinedWords = [];
     for (var cat in _allLoadedCategories) {
-      if (_selectedCategoryIds.contains(cat.id))
+      if (_selectedCategoryIds.contains(cat.id)) {
         combinedWords.addAll(cat.words);
+      }
     }
     combinedWords.shuffle();
     List<Word> gameWords =
@@ -154,30 +162,18 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Map<String, dynamic> _getCategoryStyle(String id) {
     switch (id) {
-      case 'objects':
-        return {'icon': Icons.lightbulb_outline, 'color': Colors.amber};
-      case 'places':
-        return {'icon': Icons.map_outlined, 'color': Colors.blue};
-      case 'animals':
-        return {'icon': Icons.pets, 'color': Colors.green};
-      case 'personality':
-        return {'icon': Icons.psychology, 'color': Colors.purple};
-      case 'food':
-        return {'icon': Icons.fastfood, 'color': Colors.orange};
-      case 'tech':
-        return {'icon': Icons.computer, 'color': Colors.cyan};
-      case 'sports':
-        return {'icon': Icons.sports_soccer, 'color': Colors.redAccent};
-      case 'proverbs':
-        return {'icon': Icons.format_quote, 'color': Colors.brown};
-      case 'celebrities':
-        return {'icon': Icons.star_border, 'color': Colors.pinkAccent};
-      case 'movies_series':
-        return {'icon': Icons.movie_creation_outlined, 'color': Colors.indigo};
-      case 'football_world':
-        return {'icon': Icons.sports, 'color': Colors.teal};
-      default:
-        return {'icon': Icons.category, 'color': Colors.grey};
+      case 'objects': return {'icon': Icons.lightbulb_outline, 'color': Colors.amber};
+      case 'places': return {'icon': Icons.map_outlined, 'color': Colors.blue};
+      case 'animals': return {'icon': Icons.pets, 'color': Colors.green};
+      case 'personality': return {'icon': Icons.psychology, 'color': Colors.purple};
+      case 'food': return {'icon': Icons.fastfood, 'color': Colors.orange};
+      case 'tech': return {'icon': Icons.computer, 'color': Colors.cyan};
+      case 'sports': return {'icon': Icons.sports_soccer, 'color': Colors.redAccent};
+      case 'proverbs': return {'icon': Icons.format_quote, 'color': Colors.brown};
+      case 'celebrities': return {'icon': Icons.star_border, 'color': Colors.pinkAccent};
+      case 'movies_series': return {'icon': Icons.movie_creation_outlined, 'color': Colors.indigo};
+      case 'football_world': return {'icon': Icons.sports, 'color': Colors.teal};
+      default: return {'icon': Icons.category, 'color': Colors.grey};
     }
   }
 
@@ -189,8 +185,7 @@ class _CategoryPageState extends State<CategoryPage> {
           child: Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -200,7 +195,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
+                                boxShadow: const [
                                   BoxShadow(
                                       color: Colors.black12, blurRadius: 5)
                                 ]),
@@ -211,6 +206,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 fontSize: 24,
+                                color: Colors.black87,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'Hasti'))),
                     const SizedBox(width: 40),
@@ -221,13 +217,11 @@ class _CategoryPageState extends State<CategoryPage> {
                 child: FutureBuilder<List<Category>>(
                   future: _categoriesFuture,
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData)
-                      return const Center(child: CircularProgressIndicator());
+                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                     final categories = snapshot.data!;
 
                     return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                          16, 0, 16, 100), // فاصله زیاد برای بنر و دکمه
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
@@ -338,10 +332,10 @@ class _CategoryPageState extends State<CategoryPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _selectedCategoryIds.isNotEmpty
           ? Padding(
-              padding:
-                  const EdgeInsets.fromLTRB(20, 0, 20, 60), // بالاتر از بنر
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 60), 
               child: SizedBox(
                 width: double.infinity,
+                height: 65, // ✅ قفل کردن ارتفاع دکمه
                 child: ToonButton(
                     title: "شروع بازی",
                     icon: Icons.play_arrow_rounded,
