@@ -58,6 +58,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<TickTimer>(_onTickTimer);
     on<UserAction>(_onUserAction);
     on<DismissElimination>(_onNextTurnOrResume);
+    on<ResumeTurn>(_onResumeTurn); // ✅ مدیریت استارت دستی
   }
 
   void _onStartGame(StartGame event, Emitter<GameState> emit) {
@@ -65,10 +66,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     _nextWord(emit);
     emit(state.copyWith(status: GameStatus.playing));
     
-    // ✅ اصلاح مهم: تایمر ۳ ثانیه صبر می‌کند تا شمارش معکوسِ رابط کاربری تمام شود
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!isClosed) _startTicker();
-    });
+    _startTicker();
+    _timerSubscription?.pause(); // ✅ تایمر روی صفر متوقف می‌ماند تا دکمه آماده‌ایم زده شود
+  }
+
+  // ✅ متد جدید برای استارت کردن تایمر پس از زدن دکمه
+  void _onResumeTurn(ResumeTurn event, Emitter<GameState> emit) {
+    _timerSubscription?.resume();
   }
 
   void _onTickTimer(TickTimer event, Emitter<GameState> emit) {
@@ -86,8 +90,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           ..add(updatedTeams[state.currentTeamIndex]);
         _timerSubscription?.pause();
         
-        // ✅ کلمه بلافاصله برای تیم بعدی عوض می‌شود تا کلمه سوخته تکرار نشود
-        _nextWord(emit); 
+        _nextWord(emit); // تعویض کلمه سوخته
         
         emit(state.copyWith(
             teams: updatedTeams,
@@ -103,10 +106,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       int newTime = state.roundRemainingTime - 1;
       if (newTime <= 0) {
         _timerSubscription?.pause();
-        
-        // ✅ تعویض کلمه در حالت امتیازی به محض پایان نوبت
-        _nextWord(emit); 
-        
+        _nextWord(emit); // تعویض کلمه سوخته
         emit(state.copyWith(
             status: GameStatus.turnFinished, roundRemainingTime: 0));
       } else {
@@ -130,7 +130,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       } else {
         _passTurnToNextAliveTeam(emit);
         emit(state.copyWith(status: GameStatus.playing));
-        _timerSubscription?.resume();
+        // ✅ تایمر اینجا شروع نمی‌شود. منتظر دکمه آماده‌ایم می‌ماند.
       }
     } else {
       int nextTeamIndex = state.currentTeamIndex + 1;
@@ -155,8 +155,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             currentTeamIndex: nextTeamIndex,
             currentRound: nextRound,
             roundRemainingTime: settings.turnDuration));
-        // حذف شد: کلمه قبلاً در زمان پایان تایمر عوض شده است
-        _timerSubscription?.resume();
       }
     }
   }
