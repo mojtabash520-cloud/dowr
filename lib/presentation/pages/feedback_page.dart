@@ -14,7 +14,7 @@ class FeedbackPage extends StatefulWidget {
 class _FeedbackPageState extends State<FeedbackPage>
     with SingleTickerProviderStateMixin {
   // 🔴 اطلاعات ربات بله خود را اینجا وارد کنید
-  final String _botToken = "284365465:QShPpF7Ac96SoFQCIQeDWPLLZR9fO-maDIA";
+  final String _botToken = "2818350:f0dZJGQYcTZOE55vWoo_N2eU0IglVhyonQU";
   final String _chatId = "726989697";
 
   late TabController _tabController;
@@ -391,3 +391,4 @@ ${_commentController.text.trim()}
     );
   }
 }
+
