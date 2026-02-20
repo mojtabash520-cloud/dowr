@@ -200,7 +200,7 @@ class _CategoryPageState extends State<CategoryPage> {
                             decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
+                                boxShadow: const [
                                   BoxShadow(
                                       color: Colors.black12, blurRadius: 5)
                                 ]),
@@ -227,7 +227,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(
-                          16, 0, 16, 100), // فاصله زیاد برای بنر و دکمه
+                          16, 0, 16, 120), // فضای کافی برای اسکرول تا زیر دکمه
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
@@ -338,10 +338,10 @@ class _CategoryPageState extends State<CategoryPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _selectedCategoryIds.isNotEmpty
           ? Padding(
-              padding:
-                  const EdgeInsets.fromLTRB(20, 0, 20, 60), // بالاتر از بنر
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 60), 
               child: SizedBox(
                 width: double.infinity,
+                height: 65, // ✅ این ارتفاع ثابت مانع از غول‌پیکر شدن دکمه می‌شود
                 child: ToonButton(
                     title: "شروع بازی",
                     icon: Icons.play_arrow_rounded,
