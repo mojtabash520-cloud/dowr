@@ -58,7 +58,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<TickTimer>(_onTickTimer);
     on<UserAction>(_onUserAction);
     on<DismissElimination>(_onNextTurnOrResume);
-    on<ResumeTurn>(_onResumeTurn); // ✅ مدیریت استارت دستی
+    on<ResumeTurn>(_onResumeTurn);
   }
 
   void _onStartGame(StartGame event, Emitter<GameState> emit) {
@@ -67,10 +67,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     emit(state.copyWith(status: GameStatus.playing));
     
     _startTicker();
-    _timerSubscription?.pause(); // ✅ تایمر روی صفر متوقف می‌ماند تا دکمه آماده‌ایم زده شود
+    // ✅ تایمر در ابتدای بازی متوقف می‌ماند تا دکمه "آماده‌ایم" زده شود
+    _timerSubscription?.pause(); 
   }
 
-  // ✅ متد جدید برای استارت کردن تایمر پس از زدن دکمه
   void _onResumeTurn(ResumeTurn event, Emitter<GameState> emit) {
     _timerSubscription?.resume();
   }
@@ -90,7 +90,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           ..add(updatedTeams[state.currentTeamIndex]);
         _timerSubscription?.pause();
         
-        _nextWord(emit); // تعویض کلمه سوخته
+        _nextWord(emit); // تعویض کلمه سوخته برای تیم بعدی
         
         emit(state.copyWith(
             teams: updatedTeams,
@@ -130,7 +130,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       } else {
         _passTurnToNextAliveTeam(emit);
         emit(state.copyWith(status: GameStatus.playing));
-        // ✅ تایمر اینجا شروع نمی‌شود. منتظر دکمه آماده‌ایم می‌ماند.
+        // ✅ شروع بلافاصله نوبت تیم بعدی بدون صفحه آماده‌باش
+        _timerSubscription?.resume(); 
       }
     } else {
       int nextTeamIndex = state.currentTeamIndex + 1;
@@ -155,6 +156,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             currentTeamIndex: nextTeamIndex,
             currentRound: nextRound,
             roundRemainingTime: settings.turnDuration));
+        // ✅ شروع بلافاصله نوبت
+        _timerSubscription?.resume();
       }
     }
   }
