@@ -34,19 +34,28 @@ class GameView extends StatefulWidget {
 class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final SoundManager _sounds = SoundManager();
   Timer? _tickDebounce;
+  Timer? _readyTickTimer; // ✅ تایمر مخصوص تیک‌تاک در صفحه آماده‌باش
   
-  bool _isReadyPhase = true; // ✅ حالت آماده‌باش اولیه
-  Color _flashColor = Colors.transparent; // ✅ افکت نوری کلیک‌ها
+  bool _isReadyPhase = true; 
+  Color _flashColor = Colors.transparent; 
 
   @override
   void initState() {
     super.initState();
     _sounds.startMusic();
+    
+    // ✅ پخش صدای تیک‌تاک استرس‌زا در پس‌زمینه تا زمانی که دکمه آماده‌ایم را بزنند
+    _readyTickTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isReadyPhase && mounted) {
+        _sounds.playTick();
+      }
+    });
   }
 
   @override
   void dispose() {
     _tickDebounce?.cancel();
+    _readyTickTimer?.cancel(); // ✅ خاموش کردن تایمر آماده‌باش
     super.dispose();
   }
 
@@ -72,7 +81,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  // ✅ متد ساخت افکت نوری
   void _showFlash(Color color) {
     setState(() => _flashColor = color);
     Future.delayed(const Duration(milliseconds: 250), () {
@@ -81,19 +89,19 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _handleWordTap(BuildContext context) {
-    _showFlash(Colors.green.withOpacity(0.4)); // هاله سبز
+    _showFlash(Colors.green.withOpacity(0.4)); 
     _sounds.playCorrect();
     context.read<GameBloc>().add(const UserAction(GameActionType.correct));
   }
   
   void _handleSkip(BuildContext context) {
-    _showFlash(Colors.orange.withOpacity(0.4)); // هاله زرد
+    _showFlash(Colors.orange.withOpacity(0.4)); 
     _sounds.playPass();
     context.read<GameBloc>().add(const UserAction(GameActionType.pass));
   }
 
   void _handleFoul(BuildContext context) {
-    _showFlash(Colors.red.withOpacity(0.4)); // هاله قرمز
+    _showFlash(Colors.red.withOpacity(0.4)); 
     _sounds.playFoul();
     context.read<GameBloc>().add(const UserAction(GameActionType.foul));
   }
@@ -129,10 +137,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                        if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
                     }
       
-                    // صدای تیک‌تاک فقط در زمان بازی پخش شود (نه در صفحه آماده‌باش)
+                    // ✅ برگشتن ۲۰ ثانیه حیاتی آخر با صدای تیک!
                     if (state.status == GameStatus.playing && !_isReadyPhase) {
                        int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
-                       if (timeToShow > 0 && timeToShow <= 15) {
+                       if (timeToShow > 0 && timeToShow <= 20) { // تنظیم شد روی ۲۰ ثانیه
                          if (_tickDebounce?.isActive ?? false) return;
                          _sounds.playTick();
                          _tickDebounce = Timer(const Duration(milliseconds: 900), () {});
@@ -140,13 +148,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                     }
                   },
                   listenWhen: (prev, curr) {
-                    // ✅ اگر نوبت عوض شد، حتماً صفحه آماده‌باش را نمایش بده
-                    if (prev.currentTeamIndex != curr.currentTeamIndex || prev.currentRound != curr.currentRound) {
-                       if (curr.status == GameStatus.playing) {
-                         setState(() => _isReadyPhase = true);
-                       }
-                    }
-                    return true;
+                    // فقط زمانی صفحه را آپدیت کن که واقعا تغییری رخ داده باشد
+                    return prev.status != curr.status || 
+                           prev.roundRemainingTime != curr.roundRemainingTime || 
+                           prev.teams != curr.teams ||
+                           prev.currentWord != curr.currentWord;
                   },
                   builder: (context, state) {
                     if (state.teams.isEmpty) return const SizedBox();
@@ -183,7 +189,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                         Text(activeTeam.name, style: TextStyle(color: activeTeam.color, fontSize: 32, fontWeight: FontWeight.w900, fontFamily: 'Peyda'), textAlign: TextAlign.center),
                                         const SizedBox(height: 15),
                                         
-                                        // کلیک روی کلمه (غیرفعال در حالت آماده‌باش)
                                         GestureDetector(
                                           onTap: _isReadyPhase ? null : () => _handleWordTap(context),
                                           child: GameCard(
@@ -193,11 +198,21 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                                 const SizedBox(height: 8),
                                                 FittedBox(
                                                   fit: BoxFit.scaleDown,
+                                                  // ✅ انیمیشن بسیار نرم‌تر و زیباتر برای کلمات
                                                   child: AnimatedSwitcher(
-                                                    duration: const Duration(milliseconds: 300),
-                                                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                                                    duration: const Duration(milliseconds: 350),
+                                                    transitionBuilder: (child, anim) {
+                                                      return FadeTransition(
+                                                        opacity: anim,
+                                                        child: ScaleTransition(
+                                                          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+                                                            CurvedAnimation(parent: anim, curve: Curves.easeOutBack)
+                                                          ),
+                                                          child: child,
+                                                        ),
+                                                      );
+                                                    },
                                                     child: Text(
-                                                      // ✅ مخفی کردن کلمه در حالت آماده‌باش
                                                       _isReadyPhase ? "؟ ؟ ؟" : (state.currentWord?.text ?? "..."), 
                                                       key: ValueKey(_isReadyPhase ? "hidden" : state.currentWord?.text), 
                                                       textAlign: TextAlign.center, 
@@ -205,7 +220,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                                     ),
                                                   ),
                                                 ),
-                                                // ✅ مخفی کردن کلمات ممنوعه در حالت آماده‌باش
                                                 if (!_isReadyPhase && (state.currentWord?.forbidden.isNotEmpty ?? false)) ...[
                                                   const SizedBox(height: 15),
                                                   const Divider(),
@@ -261,7 +275,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             ),
           ),
 
-          // ✅ لایه افکت نوری کلیک روی صفحه
           IgnorePointer(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
@@ -269,7 +282,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             ),
           ),
 
-          // ✅ صفحه فول اسکرین آماده‌باش و دکمه شروع نوبت
+          // ✅ این صفحه فقط یک بار در ابتدای بازی می‌آید!
           if (_isReadyPhase)
             Positioned.fill(
               child: Container(
@@ -287,16 +300,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                           Text(activeTeam.name, style: TextStyle(fontFamily: 'Hasti', fontSize: 50, color: activeTeam.color, fontWeight: FontWeight.w900)),
                           const SizedBox(height: 60),
                           SizedBox(
-                            width: 200, height: 65,
+                            width: 220, height: 75,
                             child: ToonButton(
                               title: "آماده‌ایم!",
                               icon: Icons.play_arrow_rounded,
                               color: const Color(0xFF00C853),
                               isLarge: true,
                               onPressed: () {
-                                _sounds.playTick(); // صدای شروع
-                                setState(() => _isReadyPhase = false); // حذف صفحه آماده‌باش
-                                context.read<GameBloc>().add(const ResumeTurn()); // استارت تایمر موتور بازی
+                                _readyTickTimer?.cancel(); // قطع کردن صدای تیک
+                                _sounds.playCorrect(); 
+                                setState(() => _isReadyPhase = false); 
+                                context.read<GameBloc>().add(const ResumeTurn()); 
                               }
                             ),
                           )
@@ -386,10 +400,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               onPressed: () { 
                 _sounds.startMusic(); 
                 Navigator.pop(context); 
-                // ✅ فقط به موتور اطلاع میدیم کادر دیالوگ بسته شد (تصمیم‌گیری برای صفحه آماده‌باش خودکار انجام میشه)
+                // ✅ بستن دیالوگ و استارت بلافاصله‌ی تیم بعدی (بدون توقف)
                 context.read<GameBloc>().add(DismissElimination());
               },
-              child: const Text("ادامه", style: TextStyle(fontFamily: 'Peyda', fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text("شروع نوبت بعد", style: TextStyle(fontFamily: 'Peyda', fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             )
           )
         ]
