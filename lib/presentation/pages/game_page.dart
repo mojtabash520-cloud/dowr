@@ -36,7 +36,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   Timer? _tickDebounce;
   late AnimationController _progressController;
 
-  // متغیرهای صفحه آماده‌باش
+  // Countdown Overlay Variables
   bool _isCountingDown = false;
   int _countdownValue = 3;
   String _nextTeamName = "";
@@ -45,13 +45,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _sounds.startMusic();
+    _sounds.startMusic(); // Ensure music plays when entering the game
     _progressController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
 
-    // استارت شمارش معکوس برای اولین بار که بازی باز می‌شود
+    // Start countdown for the first time the game opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _nextTeamName = widget.settings.teamNames.isNotEmpty ? widget.settings.teamNames.first : "تیم اول";
-      _nextTeamColor = Colors.white;
+      // Safely check if teamNames exists and is not empty to avoid the null safety error
+      _nextTeamName = (widget.settings.teamNames != null && widget.settings.teamNames!.isNotEmpty) 
+          ? widget.settings.teamNames!.first 
+          : "تیم اول";
+          
+      _nextTeamColor = Colors.white; // Default color for the first overlay
       _startCountdown(() {});
     });
   }
@@ -81,7 +85,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (_countdownValue > 0) {
         _sounds.playTick();
       } else {
-        _sounds.playCorrect(); // پخش یک صدای متفاوت برای لحظه شروع
+        _sounds.playCorrect(); // A distinct sound to signal the start
         timer.cancel();
         setState(() {
           _isCountingDown = false;
@@ -113,6 +117,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
+  // Handle tap on the word card (registers a correct answer)
   void _handleWordTap(BuildContext context) {
     _sounds.playCorrect();
     context.read<GameBloc>().add(const UserAction(GameActionType.correct));
@@ -153,6 +158,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                        if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
                     }
       
+                    // Play ticking sound only when playing and NOT during the countdown overlay
                     if (state.status == GameStatus.playing && !_isCountingDown) {
                        int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
                        if (timeToShow > 0 && timeToShow <= 15) {
@@ -198,7 +204,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                         Text(activeTeam.name, style: TextStyle(color: activeTeam.color, fontSize: 32, fontWeight: FontWeight.w900, fontFamily: 'Peyda'), textAlign: TextAlign.center),
                                         const SizedBox(height: 15),
                                         
-                                        // کارت کلمه (که الان تبدیل به دکمه اصلی شده)
+                                        // The Word Card is now a massive button for 'Correct'
                                         GestureDetector(
                                           onTap: () => _handleWordTap(context),
                                           child: GameCard(
@@ -225,7 +231,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                                   Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: state.currentWord!.forbidden.map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 14, fontFamily: 'Peyda')), padding: EdgeInsets.zero, backgroundColor: Colors.red.shade50, labelStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontFamily: 'Peyda'), side: BorderSide.none)).toList())
                                                 ],
                                                 const SizedBox(height: 25),
-                                                // راهنمای تصویری ضربه روی کارت
+                                                // Visual hint to tap the card
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                   decoration: BoxDecoration(
@@ -256,7 +262,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                           ),
                         ),
       
-                        // دکمه‌های پایین (حالا فقط رد کردن و خطا هستند و فاصله مناسب دارند)
+                        // Bottom buttons (now only Skip and Foul)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 5, 16, 40),
                           child: SizedBox(
@@ -280,7 +286,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             ),
           ),
 
-          // لایه شمارش معکوس روی صفحه بازی
+          // Countdown Overlay UI
           if (_isCountingDown)
             Positioned.fill(
               child: Container(
@@ -387,7 +393,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 _sounds.startMusic(); 
                 Navigator.pop(context); 
                 
-                // آماده‌سازی برای تیم بعدی (شمارش معکوس)
+                // Prepare countdown for the next team
                 _nextTeamName = nextTeam.name;
                 _nextTeamColor = nextTeam.color;
                 _startCountdown(() {
