@@ -80,13 +80,9 @@ class _SetupPageState extends State<SetupPage> {
     });
   }
 
-  TextStyle get _numberStyle => const TextStyle(
-      fontFamily: 'Peyda', fontWeight: FontWeight.bold, fontSize: 24);
-  TextStyle get _labelStyle => const TextStyle(
-      fontFamily: 'Hasti',
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: Colors.grey);
+  // ✅ فونت‌ها اینجا به شکل کاملا صریح و هاردکد تنظیم شدند
+  TextStyle get _numberStyle => const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold, fontSize: 24, color: Colors.black87);
+  TextStyle get _labelStyle => const TextStyle(fontFamily: 'Hasti', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey);
 
   @override
   Widget build(BuildContext context) {
@@ -97,47 +93,38 @@ class _SetupPageState extends State<SetupPage> {
             children: [
               // هدر
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const FeedbackPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackPage()));
                       },
                       child: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 5)
-                            ]),
-                        child: const Icon(Icons.mail_outline_rounded,
-                            color: Color(0xFF6C63FF)),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)]),
+                        child: const Icon(Icons.mail_outline_rounded, color: Color(0xFF6C63FF)),
                       ),
                     ),
                     const Text("تنظیمات نبرد",
                         style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
-                            fontFamily: 'Hasti')),
+                            fontFamily: 'Hasti',
+                            color: Colors.black87)),
                     GestureDetector(
                       onTap: _showTutorial,
                       child: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 5)
-                            ]),
-                        child: const Icon(Icons.question_mark_rounded,
-                            color: Color(0xFF6C63FF)),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)]),
+                        child: const Icon(Icons.question_mark_rounded, color: Color(0xFF6C63FF)),
                       ),
                     ),
                   ],
@@ -146,17 +133,12 @@ class _SetupPageState extends State<SetupPage> {
 
               // انتخاب نوع بازی
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
                   children: [
-                    Expanded(
-                        child: _modeSelector(
-                            "بقا", Icons.timer_off_rounded, GameMode.survival)),
+                    Expanded(child: _modeSelector("بقا", Icons.timer_off_rounded, GameMode.survival)),
                     const SizedBox(width: 10),
-                    Expanded(
-                        child: _modeSelector(
-                            "امتیازی", Icons.star_rounded, GameMode.rounds)),
+                    Expanded(child: _modeSelector("امتیازی", Icons.star_rounded, GameMode.rounds)),
                   ],
                 ),
               ),
@@ -165,40 +147,23 @@ class _SetupPageState extends State<SetupPage> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
-                    // تعداد تیم‌ها (اصلاح شده)
                     GameCard(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text("تعداد تیم‌ها:",
-                              style:
-                                  _labelStyle.copyWith(color: Colors.black87)),
-
-                          // ✅ کنترلر تعداد تیم (بهبود یافته)
+                          Text("تعداد تیم‌ها:", style: _labelStyle.copyWith(color: Colors.black87)),
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // دکمه افزودن (راست - سبز)
-                                _roundBtn(Icons.add, const Color(0xFF00C853),
-                                    () => _changeTeamCount(1)),
-
-                                // عدد وسط
-                                SizedBox(
-                                    width: 50,
-                                    child: Center(
-                                        child: Text("$_teamCount",
-                                            style: _numberStyle))),
-
-                                // دکمه کاهش (چپ - قرمز)
-                                _roundBtn(Icons.remove, const Color(0xFFFF6584),
-                                    () => _changeTeamCount(-1)),
+                                _roundBtn(Icons.add, const Color(0xFF00C853), () => _changeTeamCount(1)),
+                                SizedBox(width: 50, child: Center(child: Text("$_teamCount", style: _numberStyle))),
+                                _roundBtn(Icons.remove, const Color(0xFFFF6584), () => _changeTeamCount(-1)),
                               ],
                             ),
                           )
@@ -209,9 +174,7 @@ class _SetupPageState extends State<SetupPage> {
 
                     // لیست اسامی
                     ...List.generate(_teamCount, (index) {
-                      Color teamColor = index < _defaultTeams.length
-                          ? _defaultTeams[index]['color']
-                          : Colors.grey;
+                      Color teamColor = index < _defaultTeams.length ? _defaultTeams[index]['color'] : Colors.grey;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: TextField(
@@ -220,13 +183,10 @@ class _SetupPageState extends State<SetupPage> {
                               filled: true,
                               fillColor: Colors.white,
                               prefixIcon: Icon(Icons.circle, color: teamColor),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12)),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontFamily: 'Peyda'),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                          // ✅ اجبار فونت پیدا برای داخل کادرهای متنی (اسم تیم‌ها)
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Peyda', color: Colors.black87),
                         ),
                       );
                     }),
@@ -238,10 +198,7 @@ class _SetupPageState extends State<SetupPage> {
                       Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [45, 60, 90]
-                              .map((sec) => _optionChip(
-                                  "$sec",
-                                  _turnDuration == sec,
-                                  () => setState(() => _turnDuration = sec)))
+                              .map((sec) => _optionChip("$sec", _turnDuration == sec, () => setState(() => _turnDuration = sec)))
                               .toList()),
                       const SizedBox(height: 20),
                       Text("تعداد دور (راند)", style: _labelStyle),
@@ -252,13 +209,8 @@ class _SetupPageState extends State<SetupPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [1, 3, 5, 7]
                                   .map((r) => Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 4),
-                                      child: _optionChip(
-                                          "$r",
-                                          _roundsCount == r,
-                                          () => setState(
-                                              () => _roundsCount = r))))
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: _optionChip("$r", _roundsCount == r, () => setState(() => _roundsCount = r))))
                                   .toList())),
                     ] else ...[
                       Text("بانک زمانی هر تیم (دقیقه)", style: _labelStyle),
@@ -269,13 +221,8 @@ class _SetupPageState extends State<SetupPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [1, 2, 3, 4, 5]
                               .map((min) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4),
-                                    child: _optionChip(
-                                        "$min",
-                                        _survivalTime == min * 60,
-                                        () => setState(
-                                            () => _survivalTime = min * 60)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: _optionChip("$min", _survivalTime == min * 60, () => setState(() => _survivalTime = min * 60)),
                                   ))
                               .toList(),
                         ),
@@ -285,10 +232,12 @@ class _SetupPageState extends State<SetupPage> {
                 ),
               ),
 
+              // ✅ اصلاح بزرگ برای دکمه پایین صفحه (مثل ToonButton واقعی)
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), // پدینگ پایین بیشتر شد
                 child: SizedBox(
                   width: double.infinity,
+                  height: 65, // ارتفاع نرمال و زیبا
                   child: ToonButton(
                     title: "ادامه",
                     icon: Icons.arrow_back_ios_new_rounded,
@@ -337,6 +286,7 @@ class _SetupPageState extends State<SetupPage> {
         child: Column(children: [
           Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 28),
           const SizedBox(height: 4),
+          // ✅ فونت Hasti (یا Peyda) برای کادر بقا و امتیازی
           Text(title,
               style: TextStyle(
                   color: isSelected ? Colors.white : Colors.grey,
@@ -360,12 +310,7 @@ class _SetupPageState extends State<SetupPage> {
                 color: isSelected ? Colors.orange : Colors.grey.shade300,
                 width: 2),
             boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                        color: Colors.orange.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4))
-                  ]
+                ? [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
                 : []),
         child: Text(label,
             style: _numberStyle.copyWith(
@@ -375,21 +320,15 @@ class _SetupPageState extends State<SetupPage> {
     );
   }
 
-  // ✅ متد اصلاح شده با قابلیت دریافت رنگ
   Widget _roundBtn(IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(10), // کمی بزرگتر برای لمس راحت‌تر
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-            color: color, // رنگ متغیر
+            color: color,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: color.withOpacity(0.4),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2))
-            ]),
+            boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4, offset: const Offset(0, 2))]),
         child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
