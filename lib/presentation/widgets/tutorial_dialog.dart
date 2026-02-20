@@ -14,7 +14,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
   final PageController _controller = PageController();
   int _currentPage = 0;
 
-  // ✅ لیست کامل محتوا طبق متن شما
   final List<Map<String, dynamic>> _steps = [
     {
       "title": "🎯 هدف بازی",
@@ -72,7 +71,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
-        // ارتفاع دینامیک ولی محدود
         constraints: const BoxConstraints(maxHeight: 650),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -87,7 +85,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
         ),
         child: Column(
           children: [
-            // فضای اصلی اسلایدر
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -98,7 +95,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
                   return SingleChildScrollView(
                     child: Column(
                       children: [
-                        // 🖼️ نمایش عکس ۱۶:۹
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(28)),
@@ -108,8 +104,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
                               step['image'],
                               fit: BoxFit.cover,
                               errorBuilder: (c, e, s) => Container(
-                                color: const Color(
-                                    0xFFFFFdd0), // رنگ کرمی (پیش‌فرض اگر عکس نبود)
+                                color: const Color(0xFFFFFdd0),
                                 child: const Center(
                                     child: Icon(Icons.image_not_supported,
                                         size: 50, color: Colors.grey)),
@@ -117,12 +112,10 @@ class _TutorialDialogState extends State<TutorialDialog> {
                             ),
                           ),
                         ),
-
                         Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             children: [
-                              // عنوان
                               Text(
                                 step['title'],
                                 textAlign: TextAlign.center,
@@ -134,7 +127,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              // توضیحات (با فونت وزیر برای خوانایی بهتر متن طولانی)
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
@@ -145,13 +137,14 @@ class _TutorialDialogState extends State<TutorialDialog> {
                                 ),
                                 child: Text(
                                   step['desc'],
-                                  textAlign: TextAlign.right, // متن راست‌چین
+                                  textAlign: TextAlign.right,
+                                  // ✅ راز حل شد: فونت Vazirmatn به Peyda تغییر کرد!
                                   style: const TextStyle(
                                       fontSize: 16,
                                       color: Color(0xFF2D2D2D),
                                       fontWeight: FontWeight.w600,
-                                      height: 1.8, // فاصله خطوط برای خوانایی
-                                      fontFamily: 'Vazirmatn'),
+                                      height: 1.8,
+                                      fontFamily: 'Peyda'),
                                 ),
                               ),
                             ],
@@ -163,8 +156,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
                 },
               ),
             ),
-
-            // بخش پایین (نشانگر و دکمه‌ها)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -181,7 +172,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // نشانگر صفحات (Dots)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_steps.length, (index) {
@@ -200,24 +190,23 @@ class _TutorialDialogState extends State<TutorialDialog> {
                     }),
                   ),
                   const SizedBox(height: 16),
-
-                  // دکمه‌های کنترل
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // دکمه رد کردن
                       TextButton(
                         onPressed: _completeTutorial,
                         child: const Text("رد کردن",
+                            // ✅ فونت پیدا به دکمه اضافه شد
                             style: TextStyle(
                                 color: Colors.grey,
                                 fontWeight: FontWeight.bold,
+                                fontFamily: 'Peyda',
                                 fontSize: 16)),
                       ),
-
-                      // دکمه بعدی / فهمیدم
+                      // ✅ دادن ارتفاع ثابت برای جلوگیری از فشرده شدن دکمه
                       SizedBox(
                         width: 140,
+                        height: 55, // 👈 این خط دکمه را تپل و زیبا می‌کند
                         child: ToonButton(
                           title: _currentPage == _steps.length - 1
                               ? "بزن بریم!"
