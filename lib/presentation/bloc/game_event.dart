@@ -1,5 +1,8 @@
 part of 'game_bloc.dart';
 
+// ✅ این همون خطی هست که جا مونده بود و ارور می‌داد!
+enum GameActionType { correct, foul, pass }
+
 abstract class GameEvent extends Equatable {
   const GameEvent();
 
