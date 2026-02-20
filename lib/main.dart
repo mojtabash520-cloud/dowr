@@ -35,7 +35,11 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    // ✅ اضافه شدن حالت‌های جدید برای اطمینان ۱۰۰٪ از قطع موزیک در پس‌زمینه
+    if (state == AppLifecycleState.paused || 
+        state == AppLifecycleState.inactive || 
+        state == AppLifecycleState.hidden || 
+        state == AppLifecycleState.detached) {
       SoundManager().pauseMusic();
     } else if (state == AppLifecycleState.resumed) {
       SoundManager().resumeMusic();
@@ -59,6 +63,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
         brightness: Brightness.light,
         fontFamily: 'Peyda',
 
+        // 🔴 قدرت بی‌نهایت فلاتر برای القای فونت پیدا به تمام بخش‌ها
         typography: Typography.material2021(
           black: Typography.blackCupertino.apply(fontFamily: 'Peyda'),
           white: Typography.whiteCupertino.apply(fontFamily: 'Peyda'),
@@ -67,6 +72,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           tall: Typography.tall2021.apply(fontFamily: 'Peyda'),
         ),
 
+        // ✅ تنظیمات دیالوگ‌ها (رنگ پس‌زمینه سفید و متن مشکی)
         dialogTheme: const DialogThemeData(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
@@ -74,12 +80,12 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
           contentTextStyle: TextStyle(fontFamily: 'Peyda', fontSize: 16, color: Colors.black87),
         ),
 
-        // ✅ اصلاح بزرگ: برگرداندن زیبایی به دکمه‌ها (گوشه‌های گرد و ارتفاع مناسب)
+        // ✅ زیبایی و گردی دکمه‌ها
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             textStyle: const TextStyle(fontFamily: 'Peyda', fontWeight: FontWeight.bold, fontSize: 18),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // گوشه کاملا گرد
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24), // ارتفاع مناسب
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
             elevation: 2,
           ),
         ),
@@ -93,6 +99,7 @@ class _DowrAppState extends State<DowrApp> with WidgetsBindingObserver {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
       ),
       
+      // 🔴 لایه امنیتی نهایی: اگر ویجتی از تم فرار کرد، اینجا گیر می‌افتد
       builder: (context, child) {
         return DefaultTextStyle(
           style: const TextStyle(fontFamily: 'Peyda', color: Colors.black87),
