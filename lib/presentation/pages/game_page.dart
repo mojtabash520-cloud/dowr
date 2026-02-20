@@ -34,65 +34,20 @@ class GameView extends StatefulWidget {
 class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final SoundManager _sounds = SoundManager();
   Timer? _tickDebounce;
-  late AnimationController _progressController;
-
-  // Countdown Overlay Variables
-  bool _isCountingDown = false;
-  int _countdownValue = 3;
-  String _nextTeamName = "";
-  Color _nextTeamColor = Colors.white;
+  
+  bool _isReadyPhase = true; // ✅ حالت آماده‌باش اولیه
+  Color _flashColor = Colors.transparent; // ✅ افکت نوری کلیک‌ها
 
   @override
   void initState() {
     super.initState();
-    _sounds.startMusic(); // Ensure music plays when entering the game
-    _progressController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-
-    // Start countdown for the first time the game opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Safely check if teamNames exists and is not empty to avoid the null safety error
-      _nextTeamName = (widget.settings.teamNames != null && widget.settings.teamNames!.isNotEmpty) 
-          ? widget.settings.teamNames!.first 
-          : "تیم اول";
-          
-      _nextTeamColor = Colors.white; // Default color for the first overlay
-      _startCountdown(() {});
-    });
+    _sounds.startMusic();
   }
 
   @override
   void dispose() {
     _tickDebounce?.cancel();
-    _progressController.dispose();
     super.dispose();
-  }
-
-  void _startCountdown(VoidCallback onComplete) {
-    setState(() {
-      _isCountingDown = true;
-      _countdownValue = 3;
-    });
-    _sounds.playTick();
-
-    Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _countdownValue--;
-      });
-      if (_countdownValue > 0) {
-        _sounds.playTick();
-      } else {
-        _sounds.playCorrect(); // A distinct sound to signal the start
-        timer.cancel();
-        setState(() {
-          _isCountingDown = false;
-        });
-        onComplete();
-      }
-    });
   }
 
   void _toggleMute() {
@@ -117,10 +72,30 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  // Handle tap on the word card (registers a correct answer)
+  // ✅ متد ساخت افکت نوری
+  void _showFlash(Color color) {
+    setState(() => _flashColor = color);
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _flashColor = Colors.transparent);
+    });
+  }
+
   void _handleWordTap(BuildContext context) {
+    _showFlash(Colors.green.withOpacity(0.4)); // هاله سبز
     _sounds.playCorrect();
     context.read<GameBloc>().add(const UserAction(GameActionType.correct));
+  }
+  
+  void _handleSkip(BuildContext context) {
+    _showFlash(Colors.orange.withOpacity(0.4)); // هاله زرد
+    _sounds.playPass();
+    context.read<GameBloc>().add(const UserAction(GameActionType.pass));
+  }
+
+  void _handleFoul(BuildContext context) {
+    _showFlash(Colors.red.withOpacity(0.4)); // هاله قرمز
+    _sounds.playFoul();
+    context.read<GameBloc>().add(const UserAction(GameActionType.foul));
   }
 
   @override
@@ -149,17 +124,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                     }
                     if (state.status == GameStatus.turnFinished) {
                        _sounds.playCorrect();
-                       
                        bool isPrem = await MonetizationManager.isPremium();
-                       if (!isPrem) {
-                          await AdManager.checkAndShowInterstitial();
-                       }
-      
+                       if (!isPrem) await AdManager.checkAndShowInterstitial();
                        if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
                     }
       
-                    // Play ticking sound only when playing and NOT during the countdown overlay
-                    if (state.status == GameStatus.playing && !_isCountingDown) {
+                    // صدای تیک‌تاک فقط در زمان بازی پخش شود (نه در صفحه آماده‌باش)
+                    if (state.status == GameStatus.playing && !_isReadyPhase) {
                        int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
                        if (timeToShow > 0 && timeToShow <= 15) {
                          if (_tickDebounce?.isActive ?? false) return;
@@ -168,7 +139,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                        }
                     }
                   },
-                  listenWhen: (prev, curr) => prev.status != curr.status || prev.roundRemainingTime != curr.roundRemainingTime || prev.teams != curr.teams,
+                  listenWhen: (prev, curr) {
+                    // ✅ اگر نوبت عوض شد، حتماً صفحه آماده‌باش را نمایش بده
+                    if (prev.currentTeamIndex != curr.currentTeamIndex || prev.currentRound != curr.currentRound) {
+                       if (curr.status == GameStatus.playing) {
+                         setState(() => _isReadyPhase = true);
+                       }
+                    }
+                    return true;
+                  },
                   builder: (context, state) {
                     if (state.teams.isEmpty) return const SizedBox();
                     final activeTeam = state.teams[state.currentTeamIndex];
@@ -204,9 +183,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                         Text(activeTeam.name, style: TextStyle(color: activeTeam.color, fontSize: 32, fontWeight: FontWeight.w900, fontFamily: 'Peyda'), textAlign: TextAlign.center),
                                         const SizedBox(height: 15),
                                         
-                                        // The Word Card is now a massive button for 'Correct'
+                                        // کلیک روی کلمه (غیرفعال در حالت آماده‌باش)
                                         GestureDetector(
-                                          onTap: () => _handleWordTap(context),
+                                          onTap: _isReadyPhase ? null : () => _handleWordTap(context),
                                           child: GameCard(
                                             child: Column(
                                               children: [
@@ -218,27 +197,24 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                                     duration: const Duration(milliseconds: 300),
                                                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                                                     child: Text(
-                                                      state.currentWord?.text ?? "...", 
-                                                      key: ValueKey(state.currentWord?.text), 
+                                                      // ✅ مخفی کردن کلمه در حالت آماده‌باش
+                                                      _isReadyPhase ? "؟ ؟ ؟" : (state.currentWord?.text ?? "..."), 
+                                                      key: ValueKey(_isReadyPhase ? "hidden" : state.currentWord?.text), 
                                                       textAlign: TextAlign.center, 
                                                       style: const TextStyle(fontFamily: 'Hasti', fontSize: 56, fontWeight: FontWeight.w900, color: Color(0xFF2D2D2D), height: 1.2)
                                                     ),
                                                   ),
                                                 ),
-                                                if (state.currentWord?.forbidden.isNotEmpty ?? false) ...[
+                                                // ✅ مخفی کردن کلمات ممنوعه در حالت آماده‌باش
+                                                if (!_isReadyPhase && (state.currentWord?.forbidden.isNotEmpty ?? false)) ...[
                                                   const SizedBox(height: 15),
                                                   const Divider(),
                                                   Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: state.currentWord!.forbidden.map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 14, fontFamily: 'Peyda')), padding: EdgeInsets.zero, backgroundColor: Colors.red.shade50, labelStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontFamily: 'Peyda'), side: BorderSide.none)).toList())
                                                 ],
                                                 const SizedBox(height: 25),
-                                                // Visual hint to tap the card
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFF00C853).withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1.5)
-                                                  ),
+                                                  decoration: BoxDecoration(color: const Color(0xFF00C853).withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1.5)),
                                                   child: Row(
                                                     mainAxisSize: MainAxisSize.min,
                                                     children: const [
@@ -262,7 +238,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                           ),
                         ),
       
-                        // Bottom buttons (now only Skip and Foul)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 5, 16, 40),
                           child: SizedBox(
@@ -271,9 +246,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(child: ToonButton(title: "رد", icon: Icons.fast_forward_rounded, color: const Color(0xFFFFC045), onPressed: () { _sounds.playPass(); context.read<GameBloc>().add(const UserAction(GameActionType.pass)); })),
+                                Expanded(child: ToonButton(title: "رد (تعویض)", icon: Icons.fast_forward_rounded, color: const Color(0xFFFFC045), onPressed: _isReadyPhase ? () {} : () => _handleSkip(context))),
                                 const SizedBox(width: 16),
-                                Expanded(child: ToonButton(title: "خطا", icon: Icons.close_rounded, color: const Color(0xFFFF6584), onPressed: () { _sounds.playFoul(); context.read<GameBloc>().add(const UserAction(GameActionType.foul)); })),
+                                Expanded(child: ToonButton(title: "خطا", icon: Icons.close_rounded, color: const Color(0xFFFF6584), onPressed: _isReadyPhase ? () {} : () => _handleFoul(context))),
                               ],
                             ),
                           ),
@@ -286,29 +261,48 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             ),
           ),
 
-          // Countdown Overlay UI
-          if (_isCountingDown)
+          // ✅ لایه افکت نوری کلیک روی صفحه
+          IgnorePointer(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              color: _flashColor,
+            ),
+          ),
+
+          // ✅ صفحه فول اسکرین آماده‌باش و دکمه شروع نوبت
+          if (_isReadyPhase)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.85),
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text("آماده باش!", style: TextStyle(fontFamily: 'Hasti', fontSize: 40, color: Colors.white)),
-                      const SizedBox(height: 15),
-                      Text("نوبت: $_nextTeamName", style: TextStyle(fontFamily: 'Peyda', fontSize: 32, color: _nextTeamColor, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 50),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                        child: Text(
-                          _toFarsi(_countdownValue.toString()), 
-                          key: ValueKey<int>(_countdownValue), 
-                          style: const TextStyle(fontFamily: 'Peyda', fontSize: 120, color: Colors.amber, fontWeight: FontWeight.w900)
-                        ),
-                      ),
-                    ],
+                  child: BlocBuilder<GameBloc, GameState>(
+                    builder: (context, state) {
+                      if (state.teams.isEmpty) return const SizedBox();
+                      final activeTeam = state.teams[state.currentTeamIndex];
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text("نوبت تیم", style: TextStyle(fontFamily: 'Peyda', fontSize: 24, color: Colors.white70)),
+                          const SizedBox(height: 10),
+                          Text(activeTeam.name, style: TextStyle(fontFamily: 'Hasti', fontSize: 50, color: activeTeam.color, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 60),
+                          SizedBox(
+                            width: 200, height: 65,
+                            child: ToonButton(
+                              title: "آماده‌ایم!",
+                              icon: Icons.play_arrow_rounded,
+                              color: const Color(0xFF00C853),
+                              isLarge: true,
+                              onPressed: () {
+                                _sounds.playTick(); // صدای شروع
+                                setState(() => _isReadyPhase = false); // حذف صفحه آماده‌باش
+                                context.read<GameBloc>().add(const ResumeTurn()); // استارت تایمر موتور بازی
+                              }
+                            ),
+                          )
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -392,13 +386,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               onPressed: () { 
                 _sounds.startMusic(); 
                 Navigator.pop(context); 
-                
-                // Prepare countdown for the next team
-                _nextTeamName = nextTeam.name;
-                _nextTeamColor = nextTeam.color;
-                _startCountdown(() {
-                  context.read<GameBloc>().add(DismissElimination());
-                });
+                // ✅ فقط به موتور اطلاع میدیم کادر دیالوگ بسته شد (تصمیم‌گیری برای صفحه آماده‌باش خودکار انجام میشه)
+                context.read<GameBloc>().add(DismissElimination());
               },
               child: const Text("ادامه", style: TextStyle(fontFamily: 'Peyda', fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             )
