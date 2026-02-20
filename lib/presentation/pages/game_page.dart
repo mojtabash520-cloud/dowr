@@ -36,20 +36,59 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   Timer? _tickDebounce;
   late AnimationController _progressController;
 
+  // متغیرهای صفحه آماده‌باش
+  bool _isCountingDown = false;
+  int _countdownValue = 3;
+  String _nextTeamName = "";
+  Color _nextTeamColor = Colors.white;
+
   @override
   void initState() {
     super.initState();
-    // ✅ جلوگیری از ری‌استارت شدن موزیک از اول (ادامه یکپارچه موزیک منو)
-    _sounds.startMusic(); 
+    _sounds.startMusic();
     _progressController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+
+    // استارت شمارش معکوس برای اولین بار که بازی باز می‌شود
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nextTeamName = widget.settings.teamNames.isNotEmpty ? widget.settings.teamNames.first : "تیم اول";
+      _nextTeamColor = Colors.white;
+      _startCountdown(() {});
+    });
   }
 
   @override
   void dispose() {
-    // ✅ دستور توقف موزیک حذف شد تا با بازگشت به منو، موزیک قطع نشود
     _tickDebounce?.cancel();
     _progressController.dispose();
     super.dispose();
+  }
+
+  void _startCountdown(VoidCallback onComplete) {
+    setState(() {
+      _isCountingDown = true;
+      _countdownValue = 3;
+    });
+    _sounds.playTick();
+
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _countdownValue--;
+      });
+      if (_countdownValue > 0) {
+        _sounds.playTick();
+      } else {
+        _sounds.playCorrect(); // پخش یک صدای متفاوت برای لحظه شروع
+        timer.cancel();
+        setState(() {
+          _isCountingDown = false;
+        });
+        onComplete();
+      }
+    });
   }
 
   void _toggleMute() {
@@ -87,138 +126,188 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         if (didPop) return;
         _showExitDialog(context);
       },
-      child: Scaffold(
-        body: FantasyBackground(
-          child: SafeArea(
-            child: BlocConsumer<GameBloc, GameState>(
-              listener: (context, state) async {
-                if (state.status == GameStatus.gameFinished) {
-                  _sounds.playGameOver(); 
-                  _showLeaderboardDialog(context, state.ranking);
-                }
-                if (state.status == GameStatus.teamEliminated) {
-                  _sounds.stopMusic();
-                  _sounds.playFoul();
-                  _showTurnFinishedDialog(context, state, isElimination: true);
-                }
-                if (state.status == GameStatus.turnFinished) {
-                   _sounds.playCorrect();
-                   
-                   bool isPrem = await MonetizationManager.isPremium();
-                   if (!isPrem) {
-                      await AdManager.checkAndShowInterstitial();
-                   }
-  
-                   if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
-                }
-  
-                if (state.status == GameStatus.playing) {
-                   int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
-                   if (timeToShow > 0 && timeToShow <= 15) {
-                     if (_tickDebounce?.isActive ?? false) return;
-                     _sounds.playTick();
-                     _tickDebounce = Timer(const Duration(milliseconds: 900), () {});
-                   }
-                }
-              },
-              listenWhen: (prev, curr) => prev.status != curr.status || prev.roundRemainingTime != curr.roundRemainingTime || prev.teams != curr.teams,
-              builder: (context, state) {
-                if (state.teams.isEmpty) return const SizedBox();
-                final activeTeam = state.teams[state.currentTeamIndex];
-                int mainTimerValue = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : activeTeam.remainingTime;
-  
-                return Column(
-                  children: [
-                    _buildScoreboardHeader(context, state),
-                    
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-                        decoration: BoxDecoration(color: mainTimerValue <= 10 ? Colors.red.shade100 : Colors.white54, borderRadius: BorderRadius.circular(20)),
-                        child: Text(_toFarsi(_formatTime(mainTimerValue)), style: _numberFont.copyWith(fontSize: 32, color: mainTimerValue <= 10 ? Colors.red : Colors.indigo)),
-                      ),
-                    ),
-  
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            return SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start, 
-                                  children: [
-                                    const SizedBox(height: 10),
-                                    Text("نوبت تیم:", style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Peyda')),
-                                    Text(activeTeam.name, style: TextStyle(color: activeTeam.color, fontSize: 32, fontWeight: FontWeight.w900, fontFamily: 'Peyda'), textAlign: TextAlign.center),
-                                    const SizedBox(height: 15),
-                                    
-                                    GestureDetector(
-                                      onTap: () => _handleWordTap(context),
-                                      child: GameCard(
-                                        child: Column(
-                                          children: [
-                                            const Text("🔥 کلمه هدف 🔥", style: TextStyle(color: Colors.grey, fontSize: 14, fontFamily: 'Peyda')),
-                                            const SizedBox(height: 8),
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: AnimatedSwitcher(
-                                                duration: const Duration(milliseconds: 300),
-                                                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                                                child: Text(
-                                                  state.currentWord?.text ?? "...", 
-                                                  key: ValueKey(state.currentWord?.text), 
-                                                  textAlign: TextAlign.center, 
-                                                  style: const TextStyle(fontFamily: 'Hasti', fontSize: 56, fontWeight: FontWeight.w900, color: Color(0xFF2D2D2D), height: 1.2)
+      child: Stack(
+        children: [
+          Scaffold(
+            body: FantasyBackground(
+              child: SafeArea(
+                child: BlocConsumer<GameBloc, GameState>(
+                  listener: (context, state) async {
+                    if (state.status == GameStatus.gameFinished) {
+                      _sounds.playGameOver(); 
+                      _showLeaderboardDialog(context, state.ranking);
+                    }
+                    if (state.status == GameStatus.teamEliminated) {
+                      _sounds.stopMusic();
+                      _sounds.playFoul();
+                      _showTurnFinishedDialog(context, state, isElimination: true);
+                    }
+                    if (state.status == GameStatus.turnFinished) {
+                       _sounds.playCorrect();
+                       
+                       bool isPrem = await MonetizationManager.isPremium();
+                       if (!isPrem) {
+                          await AdManager.checkAndShowInterstitial();
+                       }
+      
+                       if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
+                    }
+      
+                    if (state.status == GameStatus.playing && !_isCountingDown) {
+                       int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
+                       if (timeToShow > 0 && timeToShow <= 15) {
+                         if (_tickDebounce?.isActive ?? false) return;
+                         _sounds.playTick();
+                         _tickDebounce = Timer(const Duration(milliseconds: 900), () {});
+                       }
+                    }
+                  },
+                  listenWhen: (prev, curr) => prev.status != curr.status || prev.roundRemainingTime != curr.roundRemainingTime || prev.teams != curr.teams,
+                  builder: (context, state) {
+                    if (state.teams.isEmpty) return const SizedBox();
+                    final activeTeam = state.teams[state.currentTeamIndex];
+                    int mainTimerValue = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : activeTeam.remainingTime;
+      
+                    return Column(
+                      children: [
+                        _buildScoreboardHeader(context, state),
+                        
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                            decoration: BoxDecoration(color: mainTimerValue <= 10 ? Colors.red.shade100 : Colors.white54, borderRadius: BorderRadius.circular(20)),
+                            child: Text(_toFarsi(_formatTime(mainTimerValue)), style: _numberFont.copyWith(fontSize: 32, color: mainTimerValue <= 10 ? Colors.red : Colors.indigo)),
+                          ),
+                        ),
+      
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  physics: const BouncingScrollPhysics(),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.start, 
+                                      children: [
+                                        const SizedBox(height: 10),
+                                        const Text("نوبت تیم:", style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Peyda')),
+                                        Text(activeTeam.name, style: TextStyle(color: activeTeam.color, fontSize: 32, fontWeight: FontWeight.w900, fontFamily: 'Peyda'), textAlign: TextAlign.center),
+                                        const SizedBox(height: 15),
+                                        
+                                        // کارت کلمه (که الان تبدیل به دکمه اصلی شده)
+                                        GestureDetector(
+                                          onTap: () => _handleWordTap(context),
+                                          child: GameCard(
+                                            child: Column(
+                                              children: [
+                                                const Text("🔥 کلمه هدف 🔥", style: TextStyle(color: Colors.grey, fontSize: 14, fontFamily: 'Peyda')),
+                                                const SizedBox(height: 8),
+                                                FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: AnimatedSwitcher(
+                                                    duration: const Duration(milliseconds: 300),
+                                                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                                                    child: Text(
+                                                      state.currentWord?.text ?? "...", 
+                                                      key: ValueKey(state.currentWord?.text), 
+                                                      textAlign: TextAlign.center, 
+                                                      style: const TextStyle(fontFamily: 'Hasti', fontSize: 56, fontWeight: FontWeight.w900, color: Color(0xFF2D2D2D), height: 1.2)
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                                if (state.currentWord?.forbidden.isNotEmpty ?? false) ...[
+                                                  const SizedBox(height: 15),
+                                                  const Divider(),
+                                                  Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: state.currentWord!.forbidden.map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 14, fontFamily: 'Peyda')), padding: EdgeInsets.zero, backgroundColor: Colors.red.shade50, labelStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontFamily: 'Peyda'), side: BorderSide.none)).toList())
+                                                ],
+                                                const SizedBox(height: 25),
+                                                // راهنمای تصویری ضربه روی کارت
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF00C853).withOpacity(0.1),
+                                                    borderRadius: BorderRadius.circular(16),
+                                                    border: Border.all(color: const Color(0xFF00C853).withOpacity(0.5), width: 1.5)
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: const [
+                                                      Icon(Icons.touch_app_rounded, color: Color(0xFF00C853), size: 20),
+                                                      SizedBox(width: 8),
+                                                      Text("برای پاسخ درست ضربه بزنید", style: TextStyle(fontFamily: 'Peyda', color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 13)),
+                                                    ],
+                                                  ),
+                                                )
+                                              ],
                                             ),
-                                            if (state.currentWord?.forbidden.isNotEmpty ?? false) ...[
-                                              const SizedBox(height: 15),
-                                              const Divider(),
-                                              Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: state.currentWord!.forbidden.map((f) => Chip(label: Text(f, style: const TextStyle(fontSize: 14, fontFamily: 'Peyda')), padding: EdgeInsets.zero, backgroundColor: Colors.red.shade50, labelStyle: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontFamily: 'Peyda'), side: BorderSide.none)).toList())
-                                            ]
-                                          ],
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 20),
+                                      ],
                                     ),
-                                    const SizedBox(height: 20),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
+                                  ),
+                                );
+                              }
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-  
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 5, 16, 40),
-                      child: SizedBox(
-                        height: 80, 
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(flex: 3, child: ToonButton(title: "رد", icon: Icons.fast_forward_rounded, color: const Color(0xFFFFC045), onPressed: () { _sounds.playPass(); context.read<GameBloc>().add(const UserAction(GameActionType.pass)); })),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 5, child: ToonButton(title: "درست!", icon: Icons.check_rounded, color: const Color(0xFF00C853), isLarge: true, onPressed: () { _sounds.playCorrect(); context.read<GameBloc>().add(const UserAction(GameActionType.correct)); })),
-                            const SizedBox(width: 12),
-                            Expanded(flex: 3, child: ToonButton(title: "خطا", icon: Icons.close_rounded, color: const Color(0xFFFF6584), onPressed: () { _sounds.playFoul(); context.read<GameBloc>().add(const UserAction(GameActionType.foul)); })),
-                          ],
+      
+                        // دکمه‌های پایین (حالا فقط رد کردن و خطا هستند و فاصله مناسب دارند)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 5, 16, 40),
+                          child: SizedBox(
+                            height: 70, 
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(child: ToonButton(title: "رد", icon: Icons.fast_forward_rounded, color: const Color(0xFFFFC045), onPressed: () { _sounds.playPass(); context.read<GameBloc>().add(const UserAction(GameActionType.pass)); })),
+                                const SizedBox(width: 16),
+                                Expanded(child: ToonButton(title: "خطا", icon: Icons.close_rounded, color: const Color(0xFFFF6584), onPressed: () { _sounds.playFoul(); context.read<GameBloc>().add(const UserAction(GameActionType.foul)); })),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-        ),
+
+          // لایه شمارش معکوس روی صفحه بازی
+          if (_isCountingDown)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.85),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("آماده باش!", style: TextStyle(fontFamily: 'Hasti', fontSize: 40, color: Colors.white)),
+                      const SizedBox(height: 15),
+                      Text("نوبت: $_nextTeamName", style: TextStyle(fontFamily: 'Peyda', fontSize: 32, color: _nextTeamColor, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 50),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                        child: Text(
+                          _toFarsi(_countdownValue.toString()), 
+                          key: ValueKey<int>(_countdownValue), 
+                          style: const TextStyle(fontFamily: 'Peyda', fontSize: 120, color: Colors.amber, fontWeight: FontWeight.w900)
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -294,7 +383,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             height: 55,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: nextTeam.color, padding: const EdgeInsets.symmetric(vertical: 12)),
-              onPressed: () { _sounds.startMusic(); Navigator.pop(context); context.read<GameBloc>().add(DismissElimination()); },
+              onPressed: () { 
+                _sounds.startMusic(); 
+                Navigator.pop(context); 
+                
+                // آماده‌سازی برای تیم بعدی (شمارش معکوس)
+                _nextTeamName = nextTeam.name;
+                _nextTeamColor = nextTeam.color;
+                _startCountdown(() {
+                  context.read<GameBloc>().add(DismissElimination());
+                });
+              },
               child: const Text("ادامه", style: TextStyle(fontFamily: 'Peyda', fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
             )
           )
@@ -353,7 +452,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6C63FF)),
                   onPressed: () {
-                    _sounds.startMusic(); // ✅ اطمینان از پخش موزیک در منو
+                    _sounds.startMusic();
                     Navigator.of(context).popUntil((r) => r.isFirst);
                   }, 
                   child: const Text("بازی جدید", style: TextStyle(fontFamily: 'Peyda', color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))
@@ -382,7 +481,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           ), 
           ElevatedButton(
             onPressed: () {
-              _sounds.startMusic(); // ✅ روشن ماندن موزیک موقع خروج دستی
+              _sounds.startMusic();
               Navigator.of(context).popUntil((r) => r.isFirst);
             }, 
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6584)), 
