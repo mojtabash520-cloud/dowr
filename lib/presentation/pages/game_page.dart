@@ -34,17 +34,17 @@ class GameView extends StatefulWidget {
 class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final SoundManager _sounds = SoundManager();
   Timer? _tickDebounce;
-  Timer? _readyTickTimer; // ✅ تایمر مخصوص تیک‌تاک در صفحه آماده‌باش
+  Timer? _readyTickTimer; 
   
   bool _isReadyPhase = true; 
   Color _flashColor = Colors.transparent; 
+  DateTime _lastClickTime = DateTime.now(); // 👈 مدیریت کلیک‌های همزمان
 
   @override
   void initState() {
     super.initState();
     _sounds.startMusic();
     
-    // ✅ پخش صدای تیک‌تاک استرس‌زا در پس‌زمینه تا زمانی که دکمه آماده‌ایم را بزنند
     _readyTickTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_isReadyPhase && mounted) {
         _sounds.playTick();
@@ -55,7 +55,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _tickDebounce?.cancel();
-    _readyTickTimer?.cancel(); // ✅ خاموش کردن تایمر آماده‌باش
+    _readyTickTimer?.cancel();
     super.dispose();
   }
 
@@ -88,19 +88,32 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     });
   }
 
+  // 👈 متد جلوگیری از اسپم کردن کلیک
+  bool _canClick() { 
+    final now = DateTime.now();
+    if (now.difference(_lastClickTime).inMilliseconds < 400) {
+      return false; 
+    }
+    _lastClickTime = now;
+    return true;
+  }
+
   void _handleWordTap(BuildContext context) {
+    if (!_canClick()) return; // 👈 جلوگیری از دوبار کلیک سریع
     _showFlash(Colors.green.withOpacity(0.4)); 
     _sounds.playCorrect();
     context.read<GameBloc>().add(const UserAction(GameActionType.correct));
   }
   
   void _handleSkip(BuildContext context) {
+    if (!_canClick()) return; // 👈 جلوگیری از دوبار کلیک سریع
     _showFlash(Colors.orange.withOpacity(0.4)); 
     _sounds.playPass();
     context.read<GameBloc>().add(const UserAction(GameActionType.pass));
   }
 
   void _handleFoul(BuildContext context) {
+    if (!_canClick()) return; // 👈 جلوگیری از دوبار کلیک سریع
     _showFlash(Colors.red.withOpacity(0.4)); 
     _sounds.playFoul();
     context.read<GameBloc>().add(const UserAction(GameActionType.foul));
@@ -137,10 +150,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                        if (mounted) _showTurnFinishedDialog(context, state, isElimination: false);
                     }
       
-                    // ✅ برگشتن ۲۰ ثانیه حیاتی آخر با صدای تیک!
                     if (state.status == GameStatus.playing && !_isReadyPhase) {
                        int timeToShow = widget.settings.mode == GameMode.rounds ? state.roundRemainingTime : state.teams[state.currentTeamIndex].remainingTime;
-                       if (timeToShow > 0 && timeToShow <= 20) { // تنظیم شد روی ۲۰ ثانیه
+                       if (timeToShow > 0 && timeToShow <= 20) { 
                          if (_tickDebounce?.isActive ?? false) return;
                          _sounds.playTick();
                          _tickDebounce = Timer(const Duration(milliseconds: 900), () {});
@@ -148,7 +160,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                     }
                   },
                   listenWhen: (prev, curr) {
-                    // فقط زمانی صفحه را آپدیت کن که واقعا تغییری رخ داده باشد
                     return prev.status != curr.status || 
                            prev.roundRemainingTime != curr.roundRemainingTime || 
                            prev.teams != curr.teams ||
@@ -198,7 +209,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                                 const SizedBox(height: 8),
                                                 FittedBox(
                                                   fit: BoxFit.scaleDown,
-                                                  // ✅ انیمیشن بسیار نرم‌تر و زیباتر برای کلمات
                                                   child: AnimatedSwitcher(
                                                     duration: const Duration(milliseconds: 350),
                                                     transitionBuilder: (child, anim) {
@@ -282,7 +292,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             ),
           ),
 
-          // ✅ این صفحه فقط یک بار در ابتدای بازی می‌آید!
           if (_isReadyPhase)
             Positioned.fill(
               child: Container(
@@ -307,7 +316,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               color: const Color(0xFF00C853),
                               isLarge: true,
                               onPressed: () {
-                                _readyTickTimer?.cancel(); // قطع کردن صدای تیک
+                                _readyTickTimer?.cancel(); 
                                 _sounds.playCorrect(); 
                                 setState(() => _isReadyPhase = false); 
                                 context.read<GameBloc>().add(const ResumeTurn()); 
@@ -400,7 +409,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               onPressed: () { 
                 _sounds.startMusic(); 
                 Navigator.pop(context); 
-                // ✅ بستن دیالوگ و استارت بلافاصله‌ی تیم بعدی (بدون توقف)
                 context.read<GameBloc>().add(DismissElimination());
               },
               child: const Text("شروع نوبت بعد", style: TextStyle(fontFamily: 'Peyda', fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
