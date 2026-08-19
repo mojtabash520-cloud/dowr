@@ -1,3 +1,4 @@
+import 'dart:async'; // 👈 برای استفاده از Timeout
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -5,9 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/entities/category.dart';
 
 class DataLoader {
-  // 🔴 لینک فایل Raw گیت‌هاب خود را اینجا بگذارید
+  // 🔴 هش حذف شد تا همیشه آخرین نسخه خوانده شود
   static const String _serverUrl =
-      'https://gist.githubusercontent.com/mojtabash520-cloud/2857f40003989ee5644d313746ded21a/raw/1d6064da3b738214fbcb655d9bd1160aeb81491a/words.json';
+      'https://gist.githubusercontent.com/mojtabash520-cloud/2857f40003989ee5644d313746ded21a/raw/words.json';
 
   static const String _prefKeyData = 'cached_words_data';
 
@@ -16,7 +17,10 @@ class DataLoader {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      final response = await http.get(Uri.parse(_serverUrl));
+      // 👈 اضافه شدن محدودیت زمانی (Timeout) برای جلوگیری از گیر کردن
+      final response = await http
+          .get(Uri.parse(_serverUrl))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> onlineJson =
