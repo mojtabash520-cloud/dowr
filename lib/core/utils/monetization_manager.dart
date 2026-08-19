@@ -26,8 +26,8 @@ class MonetizationManager {
     int unlockTimestamp = prefs.getInt('$_prefUnlockPrefix$categoryId') ?? 0;
     int now = DateTime.now().millisecondsSinceEpoch;
     
-    // ✅ ۱ ساعت = ۳,۶۰۰,۰۰۰ میلی‌ثانیه
-    if (now - unlockTimestamp < 3600000) {
+    // ✅ عدد به ۱۰,۸۰۰,۰۰۰ تغییر کرد (برابر با ۳ ساعت)
+    if (now - unlockTimestamp < 10800000) {
       return true;
     }
     return false;
