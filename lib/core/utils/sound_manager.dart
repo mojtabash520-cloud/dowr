@@ -1,5 +1,8 @@
+// File: lib/core/utils/sound_manager.dart
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart'; // ✅ اضافه شد برای چک کردن وضعیت اپلیکیشن
 
 class SoundManager {
   static final SoundManager _instance = SoundManager._internal();
@@ -15,6 +18,12 @@ class SoundManager {
   Future<void> startMusic({bool forceRestart = false}) async {
     if (isMusicMuted) return;
     if (_isPlaying && !forceRestart) return;
+
+    // 🚀 لایه امنیتی ۱: اگر اپلیکیشن در پس‌زمینه است، استارت نزن!
+    if (WidgetsBinding.instance.lifecycleState != null && 
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
 
     try {
       await _musicPlayer.stop();
@@ -35,7 +44,14 @@ class SoundManager {
   }
 
   void resumeMusic() {
-    if (!isMusicMuted && _isPlaying) _musicPlayer.resume();
+    // 🚀 لایه امنیتی ۲: جلوگیری از پخش موسیقی بعد از اتمام تماس یا بسته شدن تبلیغ در پس‌زمینه
+    if (isMusicMuted || !_isPlaying) return;
+    
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+
+    _musicPlayer.resume();
   }
 
   void toggleMute() {
@@ -43,7 +59,8 @@ class SoundManager {
     if (isMusicMuted) {
       _musicPlayer.pause();
     } else {
-      _musicPlayer.resume();
+      // اینجا هم از متد ایمن خودمان استفاده می‌کنیم
+      resumeMusic(); 
     }
   }
 
