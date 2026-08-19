@@ -1,3 +1,4 @@
+import 'dart:async'; 
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,17 +14,19 @@ class FeedbackPage extends StatefulWidget {
 
 class _FeedbackPageState extends State<FeedbackPage>
     with SingleTickerProviderStateMixin {
-  // 🔴 اطلاعات ربات بله خود را اینجا وارد کنید
-  final String _botToken = "2818350:f0dZJGQYcTZOE55vWoo_N2eU0IglVhyonQU";
+      
+  String get _botToken {
+    const part1 = "MjgxODM1MDpmMGRaSkdR";
+    const part2 = "WWNUWk9FNTV2V29vX04yZVUwSWdsVmh5b25RVQ==";
+    return utf8.decode(base64.decode(part1 + part2));
+  }
+  
   final String _chatId = "726989697";
 
   late TabController _tabController;
-
-  // کنترلرها
   final _wordController = TextEditingController();
   final _commentController = TextEditingController();
 
-  // لیست دسته‌ها
   final List<String> _categories = [
     "اشیاء",
     "مکان‌ها",
@@ -56,17 +59,14 @@ class _FeedbackPageState extends State<FeedbackPage>
     super.dispose();
   }
 
-  // تابع بررسی اینترنت و ارسال پیام
   Future<void> _submitData({required bool isWordSuggestion}) async {
-    // ۱. بررسی اینترنت
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       _showErrorDialog(
-          "خطای اتصال 🌐", "لطفاً اینترنت خود را چک کنید و دوباره تلاش کنید.");
+          "خطای اتصال", "لطفاً اینترنتت رو چک کن و دوباره امتحان کن.");
       return;
     }
 
-    // ۲. اعتبارسنجی ورودی
     if (isWordSuggestion && _wordController.text.trim().isEmpty) {
       _showErrorDialog("کلمه خالی است", "لطفاً یک کلمه بنویسید.");
       return;
@@ -78,11 +78,8 @@ class _FeedbackPageState extends State<FeedbackPage>
 
     setState(() => _isSending = true);
 
-    // ۳. ساخت متن پیام بر اساس نوع تب
     String message = "";
-
     if (isWordSuggestion) {
-      // فرمت پیام برای کلمه جدید
       message = """
 💡 *پیشنهاد کلمه جدید*
 ---------------------------
@@ -92,7 +89,6 @@ class _FeedbackPageState extends State<FeedbackPage>
 #کلمه_جدید #${_selectedCategory.replaceAll(' ', '_')}
 """;
     } else {
-      // فرمت پیام برای نظر
       message = """
 💌 *نظر یا انتقاد جدید*
 ---------------------------
@@ -104,7 +100,6 @@ ${_commentController.text.trim()}
     }
 
     try {
-      // ۴. ارسال به بله
       final url = Uri.parse("https://tapi.bale.ai/bot$_botToken/sendMessage");
       final response = await http.post(
         url,
@@ -113,7 +108,7 @@ ${_commentController.text.trim()}
           "chat_id": _chatId,
           "text": message,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         _showSuccessDialog(isWordSuggestion);
@@ -124,8 +119,10 @@ ${_commentController.text.trim()}
         }
       } else {
         _showErrorDialog(
-            "خطای سرور", "مشکلی در ارسال پیش آمد. کد: ${response.statusCode}");
+            "خطای سرور", "مشکلی در ارسال پیش اومد. کد: ${response.statusCode}");
       }
+    } on TimeoutException {
+      _showErrorDialog("خطای اینترنت", "ارتباط خیلی طول کشید! اینترنت شما ضعیفه.");
     } catch (e) {
       _showErrorDialog("خطای ارسال", "ارسال نشد. لطفاً بعداً تلاش کنید.");
     } finally {
@@ -159,7 +156,7 @@ ${_commentController.text.trim()}
             style: TextStyle(fontFamily: 'Hasti', color: Colors.green)),
         content: Text(
             isWord
-                ? "ممنون! کلمه پیشنهادی شما بررسی و اضافه خواهد شد."
+                ? "ممنون! کلمه پیشنهادیتو بررسی و اضافه میکنیم. دمت گرم❤️."
                 : "ممنون از نظر شما. حتماً می‌خوانیم!",
             style: const TextStyle(fontFamily: 'Peyda')),
         actions: [
@@ -179,7 +176,6 @@ ${_commentController.text.trim()}
         child: SafeArea(
           child: Column(
             children: [
-              // هدر با دکمه بازگشت
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -192,7 +188,7 @@ ${_commentController.text.trim()}
                         decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
+                            boxShadow: const [
                               BoxShadow(color: Colors.black12, blurRadius: 5)
                             ]),
                         child: const Icon(Icons.arrow_forward_ios_rounded,
@@ -213,8 +209,6 @@ ${_commentController.text.trim()}
                   ],
                 ),
               ),
-
-              // تب بار (Tab Bar)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
@@ -239,18 +233,12 @@ ${_commentController.text.trim()}
                   ],
                 ),
               ),
-
               const SizedBox(height: 10),
-
-              // محتوای تب‌ها
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    // تب ۱: پیشنهاد کلمه
                     _buildWordSuggestionTab(),
-
-                    // تب ۲: ارسال نظر
                     _buildCommentTab(),
                   ],
                 ),
@@ -269,7 +257,7 @@ ${_commentController.text.trim()}
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +317,7 @@ ${_commentController.text.trim()}
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFF6C63FF)))
                 : ToonButton(
-                    title: "ارسال کلمه 🚀",
+                    title: "ارسال کلمه",
                     color: const Color(0xFF6C63FF),
                     isLarge: true,
                     onPressed: () => _submitData(isWordSuggestion: true),
@@ -347,7 +335,7 @@ ${_commentController.text.trim()}
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,7 +349,7 @@ ${_commentController.text.trim()}
           Expanded(
             child: TextField(
               controller: _commentController,
-              maxLines: 10, // فضای بیشتر برای نوشتن
+              maxLines: 10,
               decoration: InputDecoration(
                 hintText: "نظر، انتقاد، یا گزارش باگ...",
                 filled: true,
@@ -380,8 +368,8 @@ ${_commentController.text.trim()}
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFFF6584)))
                 : ToonButton(
-                    title: "ارسال نظر 💌",
-                    color: const Color(0xFFFF6584), // رنگ متفاوت برای نظر
+                    title: "ارسال نظر",
+                    color: const Color(0xFFFF6584),
                     isLarge: true,
                     onPressed: () => _submitData(isWordSuggestion: false),
                   ),
@@ -391,4 +379,3 @@ ${_commentController.text.trim()}
     );
   }
 }
-
